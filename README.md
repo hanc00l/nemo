@@ -9,7 +9,7 @@ Nemo是用来进行自动化信息收集的一个简单平台，通过集成常�
 ## IP收集
 
 - Nmap、Masscan端口扫描
-- 第三方接口查询IP归属地（hao7188、ip.cn）、自定义IP归属地
+- 纯真离线数据IP归属地、自定义IP归属地
 
 ## 域名收集
 
@@ -73,6 +73,7 @@ docker run -it -d --name nemo_app -p 5000:5000 nemo/app:v1
 
 # 版本更新
 
+- 0.4.0：2021-3-30，重编译HTTPX，修正对gbk编码的识别；IP归属地使用纯真离线数据库，取消在线查询；
 - 0.3.0：2021-3-1，更新域名的任务控制功能；Sublist3r更换为pip安装；端口扫描中增加扫描中排除的IP；
 - 0.2.5：2021-2-16，不再打包Xray二进制文件（文件更新快、体积太大）；如果需要使用xray需手工将mac或linux下的xray二进制文件复制到nemo/common/thirdparty/xray目录下；
 - 0.2：2021-2-8，增加子域名收集Subfinder、JSFinder，增加标题指纹HTTPX；重构任务相关代码；
