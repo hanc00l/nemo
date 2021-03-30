@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 # coding:utf-8
-from multiprocessing.dummy import Pool
 import re
 import traceback
+from multiprocessing.dummy import Pool
 
 import requests
 
+from nemo.common.thirdparty.qqwry.qqwry import QQwry
 from nemo.common.utils.iputils import check_ip_or_domain, parse_ip
-from nemo.common.utils.parseiplocation import IPLocationCustom
 from nemo.common.utils.loggerutils import logger
+from nemo.common.utils.parseiplocation import IPLocationCustom
 from nemo.core.database.ip import Ip
-
 from nemo.core.tasks.domain.domainscan import IpDomain
 from nemo.core.tasks.taskbase import TaskBase
 
@@ -54,7 +54,7 @@ class IpLocation(TaskBase):
 
         return ipinfo
 
-    def __fetch_iplocation_from_7188(self, ip):
+    def __fetch_iplocation_from_7188_1(self, ip):
         '''调用www.hao7188.com的接口查询指定的IP地址
         '''
         url = 'http://www.hao7188.com/'
@@ -84,6 +84,18 @@ class IpLocation(TaskBase):
 
         return None
 
+    def __fetch_iplocation_from_7188(self, ip):
+        '''
+        调用www.hao7188.com的接口查询指定的IP地址
+        '''
+        url = 'https://www.hao7188.com/ip/{}.html'.format(ip)
+        session = requests.Session()
+        r1 = session.get(url)
+        if r1.status_code == requests.codes.ok:
+            return self.__parse_hao7188com_data(r1.text)
+        else:
+            return []
+
     def __fetch_iplocation_from_ipcn(self, ip):
         '''调用ip.cn查询IP地址
         '''
@@ -100,6 +112,18 @@ class IpLocation(TaskBase):
             logger.error('fetch ip location from ipcn,ip:{}'.format(ip))
 
         return None
+
+    def __fetch_iplocation_from_qqwry(self, ip):
+        try:
+            q = QQwry()
+            q.load_file('nemo/common/thirdparty/qqwry/qqwry_lastest.dat')
+            result = q.lookup(ip)
+            return result
+        except:
+            logger.error(traceback.format_exc())
+            logger.error('fetch ip location from ipcn,ip:{}'.format(ip))
+
+            return None
 
     def prepare(self, options):
         '''解析参数
@@ -136,14 +160,18 @@ class IpLocation(TaskBase):
         if ip_loc:
             ip['location'] = ip_loc
             return
-            # 从第三方接口查询IP
-        ip_loc = self.__fetch_iplocation_from_7188(ip['ip'])
-        if ip_loc and len(ip_loc) > 0:
-            ip['location'] = ','.join(ip_loc)
-            return
-        ip_loc = self.__fetch_iplocation_from_ipcn(ip['ip'])
-        if ip_loc and len(ip_loc) >= 2:
-            ip['location'] = ip_loc[1]
+        # 从第三方接口查询IP
+        # ip_loc = self.__fetch_iplocation_from_7188(ip['ip'])
+        # if ip_loc and len(ip_loc) > 0:
+        #     ip['location'] = ','.join(ip_loc)
+        #     return
+        # ip_loc = self.__fetch_iplocation_from_ipcn(ip['ip'])
+        # if ip_loc and len(ip_loc) >= 2:
+        #     ip['location'] = ip_loc[1]
+        # 从本地离线纯真数据库获取IP归属地
+        ip_loc = self.__fetch_iplocation_from_qqwry(ip['ip'])
+        if ip_loc:
+            ip['location'] = ' '.join(ip_loc)
 
     def execute(self, target_list):
         '''执行任务
