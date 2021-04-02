@@ -81,9 +81,13 @@ class PocBase(TaskBase):
         '''获取poc文件列表
         '''
         poc_files = []
-        for name in os.listdir(self.POC_PATH):
-            if os.path.isfile(os.path.join(self.POC_PATH, name)) and os.path.splitext(name)[-1] == self.POC_FILE_EXT:
-                poc_files.append(name)
+        try:
+            for name in os.listdir(self.POC_PATH):
+                if os.path.isfile(os.path.join(self.POC_PATH, name)) and os.path.splitext(name)[-1] == self.POC_FILE_EXT:
+                    poc_files.append(name)
+        except Exception as e:
+            logger.error(traceback.format_exc())
+            logger.error('load {} poc files fail:{}'.format(self.POC_PATH, str(e)))
 
         return sorted(poc_files)
 
