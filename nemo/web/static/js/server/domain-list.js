@@ -15,7 +15,7 @@ $(function () {
     $("#create_task").click(function () {
         var checkIP = [];
         $('#domain_table').DataTable().$('input[type=checkbox]:checked').each(function (i) {
-            checkIP[i] = $(this).val();
+            checkIP[i] = $(this).val().split("|")[1];
         });
         $('#text_target').val(checkIP.join("\n"));
         $('#newTask').modal('toggle');
@@ -117,7 +117,33 @@ $(function () {
 
         window.open(url);
     });
-
+    //批量删除
+    $("#batch_delete").click(function () {
+        swal({
+                title: "确定要批量删除选定的Domain?",
+                text: "该操作会删除所有选定Domain的所有信息！",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "确认删除",
+                cancelButtonText: "取消",
+                closeOnConfirm: true
+            },
+            function () {
+                $('#domain_table').DataTable().$('input[type=checkbox]:checked').each(function (i) {
+                    let id = $(this).val().split("|")[0];
+                    $.ajax({
+                        type: 'post',
+                        url: '/domain-delete/' + id,
+                        success: function (data) {
+                        },
+                        error: function (xhr, type) {
+                        }
+                    });
+                });
+                $("#domain_table").DataTable().draw(false);
+            });
+    });
     $('#domain_table').DataTable(
         {
             "paging": true,
@@ -149,7 +175,7 @@ $(function () {
                     className: "dt-body-center",
                     title: '<input  type="checkbox" class="checkall" />',
                     "render": function (data, type, row) {
-                        var strData = '<input type="checkbox" class="checkchild" value="' + row['domain'] + '"/>';
+                        var strData = '<input type="checkbox" class="checkchild" value="' + row['id'] + "|" + row['domain'] + '"/>';
                         if (row['memo_content']) {
                             strData += '&nbsp;<span class="badge  badge-primary" data-toggle="tooltip" data-html="true" title="' + html2Escape(row['memo_content']) + '"><i class="fa fa-flag"></i></span>';
                         }

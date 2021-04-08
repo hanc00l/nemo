@@ -17,7 +17,7 @@ $(function () {
     $("#create_task").click(function () {
         var checkIP = [];
         $('#ip_table').DataTable().$('input[type=checkbox]:checked').each(function (i) {
-            checkIP[i] = $(this).val();
+            checkIP[i] = $(this).val().split("|")[1];
         });
         $('#text_target').val(checkIP.join("\n"));
         $('#newTask').modal('toggle');
@@ -35,7 +35,7 @@ $(function () {
             if (!port) port = "--top-ports 1000";
             if (!rate) rate = 5000;
             var exclude_ip = "";
-            if($('#checkbox_exclude').is(":checked")){
+            if ($('#checkbox_exclude').is(":checked")) {
                 exclude_ip = $('#input_exclude').val();
             }
             $.post("/task-start-portscan",
@@ -165,6 +165,34 @@ $(function () {
         window.open(url);
     });
 
+    //批量删除
+    $("#batch_delete").click(function () {
+        swal({
+                title: "确定要批量删除选定的IP?",
+                text: "该操作会删除所有选定IP的所有信息！",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "确认删除",
+                cancelButtonText: "取消",
+                closeOnConfirm: true
+            },
+            function () {
+                $('#ip_table').DataTable().$('input[type=checkbox]:checked').each(function (i) {
+                    let id = $(this).val().split("|")[0];
+                    $.ajax({
+                        type: 'post',
+                        url: '/ip-delete/' + id,
+                        success: function (data) {
+                        },
+                        error: function (xhr, type) {
+                        }
+                    });
+                });
+                $("#ip_table").DataTable().draw(false);
+            });
+    });
+
     //IP列表
     $('#ip_table').DataTable(
         {
@@ -201,7 +229,7 @@ $(function () {
                     className: "dt-body-center",
                     title: '<input  type="checkbox" class="checkall" />',
                     "render": function (data, type, row) {
-                        var strData = '<input type="checkbox" class="checkchild" value="' + row['ip'] + '"/>';
+                        var strData = '<input type="checkbox" class="checkchild" value="' + row['id'] + "|" + row['ip'] + '"/>';
                         if (row['memo_content']) {
                             strData += '&nbsp;<span class="badge badge-primary" data-toggle="tooltip" data-html="true" title="' + html2Escape(row['memo_content']) + '"><i class="fa fa-flag"></span>';
                         }
@@ -368,6 +396,7 @@ function delete_ip(id) {
             });
         });
 }
+
 
 function get_task_status() {
     $.post("/dashboard-task-info", function (data) {

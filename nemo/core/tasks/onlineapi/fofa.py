@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # coding:utf-8
 import base64
+import time
 import traceback
+
 import requests
 
 from instance.config import APIConfig
-from nemo.common.utils.iputils import check_ip_or_domain, parse_ip
+from nemo.common.utils.iputils import check_ip_or_domain
 from nemo.common.utils.loggerutils import logger
 from nemo.core.tasks.taskbase import TaskBase
 
@@ -76,12 +78,18 @@ class Fofa(TaskBase):
     def __fofa_search(self, query_str):
         '''查询FOFA
         '''
-        datas = self.__get_data(
-            query_str, 1, 'host,ip,port,title,server,province,city,country_name')
-        if datas:
-            return datas['results']
-        else:
-            return None
+        data_ret = []
+        # 查询前1000条记录（10页，每页100条记录）
+        for i in range(1, 11):
+            fofa_data = self.__get_data(
+                query_str, i, 'host,ip,port,title,server,province,city,country_name')
+            if fofa_data and 'results' in fofa_data and fofa_data['results']:
+                data_ret.extend(fofa_data['results'])
+            else:
+                break
+            time.sleep(1)
+
+        return data_ret
 
     def __parse_ip_port(self, line):
         '''解析IP与PORT
@@ -94,13 +102,13 @@ class Fofa(TaskBase):
         port = int(line[2])
         title = line[3]
         server = line[4]
-        location = ' '.join([line[5], line[6], line[7]])
-        p = {'port': port}#, 'status': 'N/A'}
+        # location = ' '.join([line[5], line[6], line[7]])
+        p = {'port': port}  # , 'status': 'N/A'}
         if title:
             p['title'] = title
         if server:
             p['server'] = server
-        ip_port = {'ip': ip, 'port': [p, ]}#'status': 'N/A', }
+        ip_port = {'ip': ip, 'port': [p, ]}  # 'status': 'N/A', }
         # if len(location) > 2:
         #     ip_port['location'] = location
 
@@ -132,14 +140,14 @@ class Fofa(TaskBase):
         '''
         self.target = []
         for t in options['target']:
-            if check_ip_or_domain(t):
-                ip_target = parse_ip(t)
-                if ip_target and isinstance(ip_target, (tuple, list)):
-                    self.target.extend(ip_target)
-                else:
-                    self.target.append(ip_target)
-            else:
-                self.target.append(t)
+            # if check_ip_or_domain(t):
+            #     ip_target = parse_ip(t)
+            #     if ip_target and isinstance(ip_target, (tuple, list)):
+            #         self.target.extend(ip_target)
+            #     else:
+            #         self.target.append(ip_target)
+            # else:
+            self.target.append(t)
         self.org_id = self.get_option('org_id', options, self.org_id)
 
     def execute(self, target):
